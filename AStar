@@ -1,0 +1,122 @@
+#include <vector>
+#include "AStar.hpp"
+using namespace std;
+
+std::pair<int, float> a_star(TwoDArray<Coordinate>& g, Coordinate s, 
+                             Coordinate d, float heuristic_weight) {
+    // tbr indicates (number of vertices, length of best path found)
+    std::pair<int, float> tbr;
+
+    // TODO: Perform A* calculations
+
+    //open list and closed list 
+    std::priority_queue<Coordinate, std::vector<Coordinate>, CoordinateCompare> open;
+    std::priority_queue<Coordinate> closed;
+
+    //Store succ from parent coordinate
+    std::queue<Coordinate> succ;
+
+    //Store temporary value for g_score and f_score
+    float tempG;
+    float tempF;
+
+    //Store one of the successor that is being explored
+    Coordinate successor;
+
+    //current coordinate
+    Coordinate current = g.at(s);
+
+
+    //source vertex    
+    g.at(s).g_score = 0;
+    g.at(s).f_score = heuristic_weight * ( (d.r - s.r) + (d.c - s.c) );
+    g.at(s).open_set = true;
+
+    //push starting coordinate on the open list
+    open.push(s);
+
+    while( !open.empty() ) {
+
+        //Find the coordinate with the least f on the open list, and call it "current"
+        current = open.top();
+        open.pop();
+
+        //Pop current off the open list
+        closed.push(g.at(current));
+        g.at(current).closed_set = true;
+ 
+        //Store 4 possible options
+        if(g.at(current).r >= 1)
+            succ.push( g.at(g.at(current).r-1, g.at(current).c) ); 
+        if(g.at(current).r < g.getNumRows() - 1)
+            succ.push( g.at(g.at(current).r+1, g.at(current).c) ); 
+        if(g.at(current).c >= 1)
+            succ.push( g.at(g.at(current).r, g.at(current).c-1) ); 
+        if(g.at(current).c < g.getNumCols() - 1)
+            succ.push( g.at(g.at(current).r, g.at(current).c+1) ); 
+      
+        while( !succ.empty() ) {
+            //Take one of successor from succ
+            successor = succ.front();
+
+            //if we are at destination, stop           
+            if( g.at(successor).r == g.at(d).r && g.at(successor).c == g.at(d).c ) {
+                g.at(successor).g_score = g.at(current).g_score + 1; 
+                g.at(successor).f_score = g.at(current).g_score + 1; 
+                open.push(g.at(successor));     
+                g.at(successor).open_set = true;
+                current = open.top();
+                open.pop();
+                closed.push(g.at(current));
+                g.at(current).closed_set = true;
+                break;
+            }
+
+            //If successor is obstacle, ignore
+            if(g.at(successor).obstacle == false) {            
+                //set successor's g_score and f_score    
+                tempG = g.at(current).g_score + 1;
+                tempF = tempG + heuristic_weight * 
+                    ((g.at(d).r - g.at(successor).r) + (g.at(d).c - g.at(successor).c));
+
+                //If the successor already visited, take lowest scores
+                if(g.at(successor).open_set == true ) {
+                    if( tempF < g.at(successor).f_score ) {
+                        g.at(successor).g_score = tempG;
+                        g.at(successor).f_score = tempF;
+                    }
+                }
+                //If the successor is not visited yet, calculate f_score and g_score
+                else {
+                    g.at(successor).g_score = tempG;
+                    g.at(successor).f_score = tempF;
+                    open.push(g.at(successor));     
+                    g.at(successor).open_set = true;
+                }
+            }
+            succ.pop();
+        } //end of inner while loop
+
+        //if successor is the destination, stop search            
+        if( g.at(successor).r == g.at(d).r && g.at(successor).c == g.at(d).c ) {
+            break;
+        }
+    }//end of outer while loop
+
+    //return value for reachable point
+    if(g.at(d).closed_set == true) {
+        tbr.first = closed.size();
+        tbr.second = g.at(d).f_score;
+    }
+
+    //-1 is returned if the destination is not reachable
+        else {
+        tbr.first = -1;
+        tbr.second = -1.0;
+    }
+
+    return tbr;
+}
+
+
+#endif
